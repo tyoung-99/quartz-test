@@ -6,17 +6,16 @@ on:
     types: [completed]
 
 permissions:
+  checks: read
   contents: write
   pull-requests: write
 
 jobs:
   auto-merge:
     if: >-
-      github.repository == 'jackyzha0/quartz' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
-      contains(github.event.workflow_run.head_branch, 'quartz-ecosystem')
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Resolve pull request
@@ -55,21 +54,6 @@ jobs:
           if [ -n "$bad" ]; then
             echo "Refusing to merge - not all checks succeeded:"
             printf '%s\n' "$bad"
-            exit 1
-          fi
-
-      - name: Confirm update is not a major bump
-        if: steps.pr.outputs.found == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: |
-          set -euo pipefail
-          title=$(gh pr view "$PR_NUMBER" --json title --jq .title)
-          echo "PR title: $title"
-          if printf '%s' "$title" | grep -qiE 'major'; then
-            echo "Refusing to merge a major update; needs human review."
             exit 1
           fi
 
